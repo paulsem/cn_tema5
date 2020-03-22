@@ -7,6 +7,7 @@
 #include <float.h>
 
 #include "glut.h"
+#include <utility>
 
 // dimensiunea ferestrei in pixeli
 #define dim 300
@@ -309,6 +310,89 @@ public:
     }
 };
 
+
+class CCurbaHilbert
+{
+public:
+    void curbaHilbert(double lungime, int nivel, CPunct& p, CVector& v, int d)
+    {
+        if (nivel == 0)
+        {
+        }
+        else
+        {
+            v.rotatie(d * 90);
+            curbaHilbert(lungime, nivel - 1, p, v, -d);
+
+            v.deseneaza(p, lungime);
+            p = v.getDest(p, lungime);
+
+            v.rotatie(-d * 90);
+            curbaHilbert(lungime, nivel - 1, p, v, d);
+
+            v.deseneaza(p, lungime);
+            p = v.getDest(p, lungime);
+
+            curbaHilbert(lungime, nivel - 1, p, v, d);
+
+            v.rotatie(-d * 90);
+            v.deseneaza(p, lungime);
+            p = v.getDest(p, lungime);
+
+            curbaHilbert(lungime, nivel - 1, p, v, -d);
+
+            v.rotatie(d * 90);
+        }
+    }
+
+    void afisare(double lungime, int nivel)
+    {
+        CVector v(0.0, 1.0);
+        CPunct p(0.0, 0.0);
+
+        curbaHilbert(lungime, nivel, p, v, 1);
+    }
+};
+
+class CImagine1 {
+public:
+    void patrat(double lungime, double x, double y) {
+        CVector v = CVector(1.0, 0);
+        CPunct p = CPunct(x, y);
+        for (int i = 0; i < 4; i++) {
+            v.deseneaza(p, lungime);
+            p = v.getDest(p, lungime);
+            v.rotatie(90);
+        }
+    }
+    void fractal(double lungime, int nivel, double x, double y)
+    {
+        if (nivel == 0)
+        {
+            patrat(1.98, -0.99, -0.99);
+        }
+        else
+        {
+            fractal(lungime / 3, nivel - 1, x, y);
+            fractal(lungime / 3, nivel - 1, x + lungime / 3, y);
+            fractal(lungime / 3, nivel - 1, x + (2 * lungime / 3), y);
+            fractal(lungime / 3, nivel - 1, x, y + lungime / 3);
+            patrat(lungime / 3, x + lungime / 3, y + lungime / 3);
+            fractal(lungime / 3, nivel - 1, x + (2 * lungime / 3), y + lungime / 3);
+            fractal(lungime / 3, nivel - 1, x, y + (2 * lungime / 3));
+            fractal(lungime / 3, nivel - 1, x + lungime / 3, y + (2 * lungime / 3));
+            fractal(lungime / 3, nivel - 1, x + (2 * lungime / 3), y + (2 * lungime / 3));
+
+        }
+    }
+
+    void afisare(double lungime, int nivel)
+    {
+        CVector v(1, 0);
+        fractal(2, nivel, -1, -1);
+    }
+};
+
 class CImagine2
 {
 public:
@@ -371,50 +455,56 @@ public:
     }
 };
 
+double normalize_single(double point,
+    double min,
+    double max,
+    double interval_min,
+    double interval_max) {
 
+    double normalized_point = (point - min) / (max - min);
+    return interval_min + (interval_max - interval_min) * normalized_point;
+}
 
-class CCurbaHilbert
-{
-public:
-    void curbaHilbert(double lungime, int nivel, CPunct& p, CVector& v, int d)
-    {
-        if (nivel == 0)
-        {
-        }
-        else
-        {
-            v.rotatie(d * 90);
-            curbaHilbert(lungime, nivel - 1, p, v, -d);
+std::pair<double, double> normalize(
+    std::pair<double, double> point,
+    std::pair<double, double> limx,
+    std::pair<double, double> limy,
+    std::pair<double, double> normalization_interval) {
+    return std::make_pair(
+        normalize_single(point.first, limx.first, limx.second,
+            normalization_interval.first, normalization_interval.second),
+        normalize_single(point.second, limy.first, limy.second,
+            normalization_interval.first, normalization_interval.second)
+    );
+}
 
-            v.deseneaza(p, lungime);
-            p = v.getDest(p, lungime);
-
-            v.rotatie(-d * 90);
-            curbaHilbert(lungime, nivel - 1, p, v, d);
-
-            v.deseneaza(p, lungime);
-            p = v.getDest(p, lungime);
-
-            curbaHilbert(lungime, nivel - 1, p, v, d);
-
-            v.rotatie(-d * 90);
-            v.deseneaza(p, lungime);
-            p = v.getDest(p, lungime);
-
-            curbaHilbert(lungime, nivel - 1, p, v, -d);
-
-            v.rotatie(d * 90);
-        }
+void DrawImage2(CPunct& origin, CVector& cVector, double lungime, int nivel, int direction) {
+    if (nivel == 0) {
+        cVector.deseneaza(origin, lungime);
+        origin = cVector.getDest(origin, lungime);
+        return;
     }
 
-    void afisare(double lungime, int nivel)
-    {
-        CVector v(0.0, 1.0);
-        CPunct p(0.0, 0.0);
+    DrawImage2(origin, cVector, lungime / 4.0, nivel - 1, direction);
+    cVector.rotatie(60 * direction);
+    DrawImage2(origin, cVector, lungime / 4.0, nivel - 1, direction * -1);
+    cVector.rotatie(60 * direction);
+    DrawImage2(origin, cVector, lungime / 4.0, nivel - 1, direction);
+    cVector.rotatie(-60 * direction);
+    DrawImage2(origin, cVector, lungime / 4.0, nivel - 1, direction * -1);
+    cVector.rotatie(-60 * direction);
+    DrawImage2(origin, cVector, lungime / 4.0, nivel - 1, direction);
+    cVector.rotatie(-60 * direction);
+    DrawImage2(origin, cVector, lungime / 4.0, nivel - 1, direction * -1);
+    cVector.rotatie(-60 * direction);
+    DrawImage2(origin, cVector, lungime / 4.0, nivel - 1, direction);
+    cVector.rotatie(60 * direction);
+    DrawImage2(origin, cVector, lungime / 4.0, nivel - 1, direction * -1);
+    cVector.rotatie(60 * direction);
+    DrawImage2(origin, cVector, lungime / 4.0, nivel - 1, direction);
+}
 
-        curbaHilbert(lungime, nivel, p, v, 1);
-    }
-};
+
 
 
 
@@ -587,6 +677,139 @@ void Display5() {
     nivel++;
 }
 
+
+
+//mandelbrot
+void Display6() {
+    int nivel_mandelbrot = 20 + nivel;
+    double dx = 0.0004;
+    double dy = 0.0018;
+
+    glBegin(GL_POINTS);
+    for (double r = -1; r <= 1; r += dx) {
+        for (double c = -1; c <= 1; c += dy) {
+            auto viewport_point = std::make_pair(r, c);
+            double x = normalize_single(
+                viewport_point.first,
+                -1, 1,
+                -2, 1
+            );
+
+            auto o = std::make_pair(
+                x,
+                viewport_point.second
+            );
+
+            auto v = std::make_pair(0.0, 0.0);
+            int level = 0;
+            while (v.first * v.first + v.second * v.second <= 4.0 && level < nivel_mandelbrot) {
+                double v_x = v.first * v.first - v.second * v.second + o.first;
+                v.second = 2.0 * v.first * v.second + o.second;
+                v.first = v_x;
+
+                level++;
+            }
+
+            double color = (double)level / nivel_mandelbrot;
+            double prag1 = 0.95;
+            double prag2 = 0.5;
+            if (color > prag1) {
+                glColor3d(1.0 - color, 1.0 - color, 1.0 - color);
+            }
+            else if (color > prag2) {
+                color = (color - prag2) / (prag1 - prag2);
+                double next = 0.3 + prag2 / 2.0;
+
+                glColor3d(color, color, next + color * (1 - next));
+            }
+            else {
+                glColor3d(0.0, 0.0, 0.3 + color / 2.0);
+            }
+
+            glVertex2d(viewport_point.first, viewport_point.second);
+        }
+    }
+    glEnd();
+
+    nivel++;
+}
+
+//imaginea 1 
+void Display7() {
+    CImagine1 turtle;
+    turtle.afisare(0.05, nivel);
+
+    char c[3];
+    sprintf(c, "%2d", nivel);
+    glRasterPos2d(-0.98, -0.98);
+    glutBitmapCharacter(GLUT_BITMAP_9_BY_15, 'N');
+    glutBitmapCharacter(GLUT_BITMAP_9_BY_15, 'i');
+    glutBitmapCharacter(GLUT_BITMAP_9_BY_15, 'v');
+    glutBitmapCharacter(GLUT_BITMAP_9_BY_15, 'e');
+    glutBitmapCharacter(GLUT_BITMAP_9_BY_15, 'l');
+    glutBitmapCharacter(GLUT_BITMAP_9_BY_15, '=');
+    glutBitmapCharacter(GLUT_BITMAP_9_BY_15, c[0]);
+    glutBitmapCharacter(GLUT_BITMAP_9_BY_15, c[1]);
+    nivel++;
+}
+
+//imaginea 2
+void Display8()
+{
+    CImagine2 cap;
+
+    char c[3];
+    sprintf(c, "%2d", nivel);
+    glRasterPos2d(-0.98, -0.98);
+    glutBitmapCharacter(GLUT_BITMAP_9_BY_15, 'N');
+    glutBitmapCharacter(GLUT_BITMAP_9_BY_15, 'i');
+    glutBitmapCharacter(GLUT_BITMAP_9_BY_15, 'v');
+    glutBitmapCharacter(GLUT_BITMAP_9_BY_15, 'e');
+    glutBitmapCharacter(GLUT_BITMAP_9_BY_15, 'l');
+    glutBitmapCharacter(GLUT_BITMAP_9_BY_15, '=');
+    glutBitmapCharacter(GLUT_BITMAP_9_BY_15, c[0]);
+    glutBitmapCharacter(GLUT_BITMAP_9_BY_15, c[1]);
+
+    glPushMatrix();
+    glLoadIdentity();
+    glScaled(0.4, 0.4, 1);
+    glTranslated(-0.5, -0.5, 0.0);
+    cap.afisare(1, nivel);
+    glPopMatrix();
+    nivel++;
+}
+
+//imaginea 3
+void Display9() {
+    CPunct origin(-0.99, -1.0);
+    CVector direction(0.0, 2.0);
+    double lungime = 2.0;
+
+    glBegin(GL_LINE);
+    DrawImage2(origin, direction, lungime, nivel, -1);
+    char c[3];
+    sprintf(c, "%2d", nivel);
+    glRasterPos2d(-0.98, -0.98);
+    glutBitmapCharacter(GLUT_BITMAP_9_BY_15, 'N');
+    glutBitmapCharacter(GLUT_BITMAP_9_BY_15, 'i');
+    glutBitmapCharacter(GLUT_BITMAP_9_BY_15, 'v');
+    glutBitmapCharacter(GLUT_BITMAP_9_BY_15, 'e');
+    glutBitmapCharacter(GLUT_BITMAP_9_BY_15, 'l');
+    glutBitmapCharacter(GLUT_BITMAP_9_BY_15, '=');
+    glutBitmapCharacter(GLUT_BITMAP_9_BY_15, c[0]);
+    glutBitmapCharacter(GLUT_BITMAP_9_BY_15, c[1]);
+
+    glPushMatrix();
+    glLoadIdentity();
+    glScaled(0.4, 0.4, 1);
+    glTranslated(-0.5, -0.5, 0.0);
+    glPopMatrix();
+    glEnd();
+
+    nivel++;
+}
+
+
 void Init(void) {
 
     glClearColor(1.0, 1.0, 1.0, 1.0);
@@ -626,6 +849,22 @@ void Display(void)
     case '5':
         glClear(GL_COLOR_BUFFER_BIT);
         Display5();
+        break;
+    case '6':
+        glClear(GL_COLOR_BUFFER_BIT);
+        Display6();
+        break;
+    case '7':
+        glClear(GL_COLOR_BUFFER_BIT);
+        Display7();
+        break;
+    case '8':
+        glClear(GL_COLOR_BUFFER_BIT);
+        Display8();
+        break;
+    case '9':
+        glClear(GL_COLOR_BUFFER_BIT);
+        Display9();
         break;
     default:
         break;
